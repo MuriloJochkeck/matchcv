@@ -4,6 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Nova análise" };
 export default async function NewAnalysisPage() {
   const supabase = await createClient();
-  const { data } = await supabase.from("resumes").select("id, original_name").eq("status", "ready").is("deleted_at", null).order("created_at", { ascending: false });
-  return <AnalysisWizard resumes={(data ?? []).map((item) => ({ id: item.id, originalName: item.original_name }))} />;
+  const { data } = await supabase.from("resumes").select("id, original_name, resume_versions(extracted_text, version)").eq("status", "ready").is("deleted_at", null).order("created_at", { ascending: false });
+  return <AnalysisWizard resumes={(data ?? []).map((item) => { const version = item.resume_versions?.sort((a, b) => b.version - a.version)[0]; return { id: item.id, originalName: item.original_name, extractedText: version?.extracted_text ?? "" }; })} />;
 }
