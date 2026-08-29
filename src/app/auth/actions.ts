@@ -52,7 +52,7 @@ export async function signupAction(
   }
   return {
     status: "success",
-    message: "Confira seu e-mail para confirmar a conta e continuar.",
+    message: "Conta criada. Você já pode entrar.",
   };
 }
 

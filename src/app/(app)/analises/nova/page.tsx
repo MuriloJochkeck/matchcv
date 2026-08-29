@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { AnalysisWizard } from "@/components/analysis-wizard";
-
+import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Nova análise" };
-
-export default function NewAnalysisPage() {
-  return <AnalysisWizard />;
+export default async function NewAnalysisPage() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("resumes").select("id, original_name").eq("status", "ready").is("deleted_at", null).order("created_at", { ascending: false });
+  return <AnalysisWizard resumes={(data ?? []).map((item) => ({ id: item.id, originalName: item.original_name }))} />;
 }

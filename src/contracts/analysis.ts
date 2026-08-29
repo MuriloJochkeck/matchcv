@@ -42,11 +42,7 @@ export type Analysis = {
 };
 
 export type CreateAnalysisRequest = {
-  resume: {
-    kind: "demo" | "local-metadata";
-    name: string;
-    sizeBytes: number;
-  };
+  resumeId: string;
   job: {
     title?: string;
     company?: string;
@@ -73,7 +69,9 @@ export type ApiErrorCode =
   | "INVALID_JSON"
   | "VALIDATION_ERROR"
   | "ANALYSIS_NOT_FOUND"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "UNAUTHENTICATED"
+  | "RESUME_NOT_FOUND";
 
 export type ApiErrorResponse = {
   code: ApiErrorCode;
@@ -115,24 +113,14 @@ export function parseCreateAnalysisRequest(input: unknown): ValidationResult {
     return { success: false, fieldErrors: { request: "Envie um objeto JSON válido." } };
   }
 
-  const resume = isRecord(input.resume) ? input.resume : {};
+  const resumeId = typeof input.resumeId === "string" ? input.resumeId.trim() : "";
   const job = isRecord(input.job) ? input.job : {};
-  const kind = resume.kind;
-  const name = typeof resume.name === "string" ? resume.name.trim() : "";
-  const sizeBytes = resume.sizeBytes;
   const description = typeof job.description === "string" ? job.description.trim() : "";
   const title = optionalTrimmedString(job.title, "job.title", 120, fieldErrors);
   const company = optionalTrimmedString(job.company, "job.company", 120, fieldErrors);
 
-  if (kind !== "demo" && kind !== "local-metadata") {
-    fieldErrors["resume.kind"] = "Origem do currículo inválida.";
-  }
-  if (!name) fieldErrors["resume.name"] = "Informe o nome do currículo.";
-  else if (name.length > 255) fieldErrors["resume.name"] = "Use no máximo 255 caracteres.";
-  if (!Number.isInteger(sizeBytes) || (sizeBytes as number) <= 0) {
-    fieldErrors["resume.sizeBytes"] = "Informe um tamanho de arquivo válido.";
-  } else if ((sizeBytes as number) > MAX_RESUME_SIZE_BYTES) {
-    fieldErrors["resume.sizeBytes"] = "O PDF deve ter no máximo 5 MB.";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resumeId)) {
+    fieldErrors.resumeId = "Selecione um currículo válido.";
   }
   if (description.length < 80) {
     fieldErrors["job.description"] = "A descrição da vaga deve ter pelo menos 80 caracteres.";
@@ -148,7 +136,7 @@ export function parseCreateAnalysisRequest(input: unknown): ValidationResult {
   return {
     success: true,
     data: {
-      resume: { kind: kind as CreateAnalysisRequest["resume"]["kind"], name, sizeBytes: sizeBytes as number },
+      resumeId,
       job: { title, company, description },
       acceptedTerms: true,
     },

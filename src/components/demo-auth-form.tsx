@@ -33,7 +33,7 @@ export function DemoAuthForm({ mode, isConfigured }: { mode: "login" | "signup";
       )}
       <div>
         <label className="field-label" htmlFor="email">E-mail</label>
-        <input aria-describedby="email-error" autoComplete="email" className="field-input" id="email" name="email" placeholder="voce@exemplo.com" required type="email" />
+        <input aria-describedby="email-error" autoComplete="email" className="field-input" id="email" name="email" placeholder="voce@exemplo.com" required type="text" />
         <p className="mt-1.5 text-xs font-semibold text-[#9a3e34]" id="email-error">{fieldError("email")}</p>
       </div>
       <div>

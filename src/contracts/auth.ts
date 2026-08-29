@@ -16,7 +16,6 @@ type ValidationResult =
   | { success: true; data: Credentials }
   | { success: false; fieldErrors: Record<string, string> };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function parseCredentials(
   input: FormData | Record<string, unknown>,
@@ -33,8 +32,8 @@ export function parseCredentials(
     typeof displayNameValue === "string" ? displayNameValue.trim() : "";
   const fieldErrors: Record<string, string> = {};
 
-  if (!EMAIL_PATTERN.test(email) || email.length > 254) {
-    fieldErrors.email = "Informe um e-mail válido.";
+  if (!email) {
+    fieldErrors.email = "Informe o e-mail da conta.";
   }
   if (password.length < 8) {
     fieldErrors.password = "Use uma senha com pelo menos 8 caracteres.";
@@ -62,8 +61,8 @@ export function parseCredentials(
 export function parseEmail(input: FormData | Record<string, unknown>) {
   const value = input instanceof FormData ? input.get("email") : input.email;
   const email = typeof value === "string" ? value.trim().toLowerCase() : "";
-  if (!EMAIL_PATTERN.test(email) || email.length > 254) {
-    return { success: false as const, fieldErrors: { email: "Informe um e-mail válido." } };
+  if (!email) {
+    return { success: false as const, fieldErrors: { email: "Informe o e-mail da conta." } };
   }
   return { success: true as const, data: { email } };
 }

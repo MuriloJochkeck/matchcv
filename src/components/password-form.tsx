@@ -16,7 +16,7 @@ export function PasswordForm({ mode }: { mode: "request" | "update" }) {
   return (
     <form action={formAction} className="space-y-5">
       {mode === "request" ? (
-        <div><label className="field-label" htmlFor="email">E-mail da conta</label><input autoComplete="email" className="field-input" id="email" name="email" required type="email" />{state.fieldErrors?.email && <p className="mt-1.5 text-xs font-semibold text-[#9a3e34]">{state.fieldErrors.email}</p>}</div>
+        <div><label className="field-label" htmlFor="email">E-mail da conta</label><input autoComplete="email" className="field-input" id="email" name="email" required type="text" />{state.fieldErrors?.email && <p className="mt-1.5 text-xs font-semibold text-[#9a3e34]">{state.fieldErrors.email}</p>}</div>
       ) : (
         <><div><label className="field-label" htmlFor="password">Nova senha</label><input autoComplete="new-password" className="field-input" id="password" minLength={8} name="password" required type="password" />{state.fieldErrors?.password && <p className="mt-1.5 text-xs font-semibold text-[#9a3e34]">{state.fieldErrors.password}</p>}</div><div><label className="field-label" htmlFor="passwordConfirmation">Confirme a nova senha</label><input autoComplete="new-password" className="field-input" id="passwordConfirmation" minLength={8} name="passwordConfirmation" required type="password" />{state.fieldErrors?.passwordConfirmation && <p className="mt-1.5 text-xs font-semibold text-[#9a3e34]">{state.fieldErrors.passwordConfirmation}</p>}</div></>
       )}

@@ -7,14 +7,7 @@ export type CurrentUser = {
   id: string;
   email: string;
   displayName: string;
-  mode: "demo" | "supabase";
-};
-
-export const demoUser: CurrentUser = {
-  id: "demo-user",
-  email: "ana@exemplo.com",
-  displayName: "Ana Souza",
-  mode: "demo",
+  mode: string;
 };
 
 function toCurrentUser(user: User): CurrentUser {
@@ -33,7 +26,7 @@ function toCurrentUser(user: User): CurrentUser {
 }
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  if (!isSupabaseConfigured()) return demoUser;
+  if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;

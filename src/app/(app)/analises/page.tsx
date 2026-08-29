@@ -1,28 +1,10 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRightIcon, ChartIcon, PlusIcon } from "@/components/icons";
-import { ScoreRing } from "@/components/score-ring";
-import { demoAnalysis } from "@/server/analysis/demo-analysis";
-import { calculateOverallScore } from "@/server/analysis/scoring";
-
+import type { Metadata } from "next";
+import { PlusIcon } from "@/components/icons";
+import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Análises" };
-
-export default function AnalysesPage() {
-  const score = calculateOverallScore(demoAnalysis.dimensions);
-  return (
-    <div>
-      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div><p className="text-sm font-semibold text-[#145c43]">Histórico</p><h1 className="mt-1 text-3xl font-extrabold tracking-[-.045em] sm:text-4xl">Suas análises</h1><p className="mt-3 max-w-2xl leading-7 text-[#5b655e]">Retome relatórios e acompanhe as vagas já comparadas. A persistência será ativada quando o Supabase estiver conectado.</p></div>
-        <Link className="button-primary shrink-0" href="/analises/nova"><PlusIcon size={18} /> Nova análise</Link>
-      </header>
-      <section aria-labelledby="history-heading" className="card mt-8 overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-[#e3e6e1] px-5 py-4 sm:px-6"><ChartIcon className="text-[#145c43]" size={19} /><h2 className="font-extrabold" id="history-heading">1 análise concluída</h2></div>
-        <article className="grid gap-5 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-6">
-          <ScoreRing score={score} size="small" />
-          <div><div className="flex flex-wrap items-center gap-2"><h3 className="font-extrabold">{demoAnalysis.jobTitle}</h3><span className="rounded-full bg-[#dff3e8] px-2.5 py-1 text-xs font-bold text-[#145c43]">Concluída</span></div><p className="mt-1 text-sm text-[#5b655e]">{demoAnalysis.companyLabel} · {demoAnalysis.createdAt}</p><p className="mt-2 text-xs text-[#7a847d]">{demoAnalysis.resumeName} · fixture demonstrativa</p></div>
-          <Link className="inline-flex items-center gap-2 text-sm font-bold text-[#145c43]" href={`/analises/${demoAnalysis.id}`}>Abrir relatório <ArrowRightIcon size={16} /></Link>
-        </article>
-      </section>
-    </div>
-  );
+export default async function AnalysesPage() {
+  const supabase = await createClient();
+  const { data: analyses } = await supabase.from("analyses").select("id, score, status, created_at, job_versions(jobs(title, company_label))").is("deleted_at", null).order("created_at", { ascending: false });
+  return <div><div className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-[#145c43]">Histórico</p><h1 className="mt-1 text-3xl font-extrabold">Suas análises</h1></div><Link className="button-primary" href="/analises/nova"><PlusIcon size={18} /> Nova análise</Link></div>{!analyses?.length ? <section className="card mt-8 p-6"><h2 className="font-extrabold">Nenhuma análise ainda</h2><p className="mt-2 text-sm text-[#5b655e]">Selecione um currículo e cole a descrição de uma vaga para começar.</p></section> : <div className="mt-8 space-y-3">{analyses.map((analysis) => { const jobVersion = analysis.job_versions?.[0] as unknown as { jobs?: { title: string | null; company_label: string | null }[] } | undefined; const job = jobVersion?.jobs?.[0] ?? null; return <Link className="card block p-5 hover:border-[#7fae91]" href={`/analises/${analysis.id}`} key={analysis.id}><div className="flex justify-between gap-4"><div><h2 className="font-extrabold">{job?.title || "Vaga analisada"}</h2><p className="mt-1 text-sm text-[#5b655e]">{job?.company_label || "Empresa não informada"}</p></div><strong className="text-2xl text-[#145c43]">{analysis.score ?? 0}%</strong></div></Link>; })}</div>}</div>;
 }

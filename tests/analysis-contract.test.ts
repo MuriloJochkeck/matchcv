@@ -6,7 +6,7 @@ import {
 } from "../src/contracts/analysis.ts";
 
 const validRequest = {
-  resume: { kind: "demo", name: "curriculo-ana.pdf", sizeBytes: 188_416 },
+  resumeId: "11111111-1111-4111-8111-111111111111",
   job: {
     title: "Pessoa desenvolvedora",
     company: "Empresa fictícia",
@@ -20,21 +20,21 @@ test("normaliza uma solicitação válida", () => {
   assert.equal(result.success, true);
   if (result.success) {
     assert.equal(result.data.job.title, "Pessoa desenvolvedora");
-    assert.equal(result.data.resume.name, "curriculo-ana.pdf");
+    assert.equal(result.data.resumeId, "11111111-1111-4111-8111-111111111111");
   }
 });
 
 test("rejeita descrição curta, consentimento ausente e arquivo acima do limite", () => {
   const result = parseCreateAnalysisRequest({
     ...validRequest,
-    resume: { ...validRequest.resume, sizeBytes: MAX_RESUME_SIZE_BYTES + 1 },
+    resumeId: "invalido",
     job: { description: "Vaga curta" },
     acceptedTerms: false,
   });
 
   assert.equal(result.success, false);
   if (!result.success) {
-    assert.match(result.fieldErrors["resume.sizeBytes"], /5 MB/);
+    assert.ok(result.fieldErrors.resumeId);
     assert.match(result.fieldErrors["job.description"], /80 caracteres/);
     assert.ok(result.fieldErrors.acceptedTerms);
   }

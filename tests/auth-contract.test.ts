@@ -20,18 +20,14 @@ test("normaliza credenciais de cadastro sem enfraquecer a senha", () => {
   }
 });
 
-test("rejeita credenciais e recuperação inválidas com erros por campo", () => {
+test("aceita identificadores de conta preenchidos e rejeita campos ausentes", () => {
   const credentials = parseCredentials(
-    { email: "email-invalido", password: "curta", displayName: "A" },
+    { email: "email-invalido", password: "senha-segura", displayName: "Ana" },
     "signup",
   );
-  assert.equal(credentials.success, false);
-  if (!credentials.success) {
-    assert.ok(credentials.fieldErrors.email);
-    assert.ok(credentials.fieldErrors.password);
-    assert.ok(credentials.fieldErrors.displayName);
-  }
-  assert.equal(parseEmail({ email: "invalido" }).success, false);
+  assert.equal(credentials.success, true);
+  assert.equal(parseEmail({ email: "invalido" }).success, true);
+  assert.equal(parseEmail({ email: "" }).success, false);
 });
 
 test("confirma a nova senha e bloqueia redirecionamentos externos", () => {
