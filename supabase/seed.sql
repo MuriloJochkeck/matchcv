@@ -1,0 +1,2 @@
+-- Keep local development deterministic. Product fixtures remain in TypeScript
+-- until the authenticated persistence flow is implemented.
