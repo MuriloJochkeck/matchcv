@@ -32,9 +32,15 @@ function normalize(value: string) {
 
 function keywords(jobText: string) {
   const words = normalize(jobText).match(/[a-z0-9+#.]{3,}/g) ?? [];
-  return [...new Set(words.filter((word) => !STOP_WORDS.has(word) && !/^\d+$/.test(word)))].slice(0, 10);
+  return [...new Set(words.map((word) => word.replace(/^\.+|\.+$/g, "")).filter((word) => !STOP_WORDS.has(word) && !/^\d+$/.test(word)))].slice(0, 10);
 }
 
+function kindFor(keyword: string, jobText: string, index: number): "required" | "desirable" {
+  const sentence = normalize(jobText).split(/[.!?\n]+/).find((item) => item.includes(keyword)) ?? "";
+  if (/desejavel|diferencial|plus|nice to have/.test(sentence)) return "desirable";
+  if (/obrigatorio|requisito|necessario|must have|essencial/.test(sentence)) return "required";
+  return index < 6 ? "required" : "desirable";
+}
 function evidenceFor(keyword: string, resumeText: string) {
   const sentence = resumeText.split(/(?<=[.!?])\s+/).find((item) => normalize(item).includes(keyword));
   return sentence ? sentence.slice(0, 500) : null;
@@ -49,7 +55,7 @@ export function computeAnalysis(resumeText: string, jobText: string) {
     return {
       requirementId: `term-${index + 1}`,
       title: term.replace(/\b\w/g, (letter) => letter.toUpperCase()),
-      kind: index < 6 ? "required" : "desirable",
+      kind: kindFor(term, jobText, index),
       status,
       confidence: evidence ? 90 : partial ? 55 : 80,
       evidence,
