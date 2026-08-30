@@ -30,7 +30,11 @@ export async function POST(request: Request) {
     const result = await processAnalysisJob(supabase, requestedJobId);
     return response({ ...result, requestId }, result.status === "failed" ? 500 : result.status === "retry_scheduled" ? 202 : 200);
   } catch (error) {
-    console.error("processing.analysis.failed", { requestId, errorName: error instanceof Error ? error.name : "UnknownError" });
+    console.error("processing.analysis.failed", {
+      requestId,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: error instanceof Error ? error.message : typeof error === "object" && error !== null && "message" in error ? String(error.message) : String(error),
+    });
     return response({ error: "Não foi possível processar o job.", requestId }, 500);
   }
 }

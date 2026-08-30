@@ -1,6 +1,7 @@
 import { parseCreateAnalysisRequest } from "../../../contracts/analysis.ts";
 import { createAdminClient } from "../../../lib/supabase/admin.ts";
 import { processAnalysisJob } from "../../../server/analysis/processor.ts";
+import { createSynchronousAnalysis, shouldUseSynchronousFallback } from "../../../server/analysis/synchronous.ts";
 import { createClient } from "../../../lib/supabase/server.ts";
 
 const headers = { "Cache-Control": "private, no-store" };
@@ -86,13 +87,21 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    if (shouldUseSynchronousFallback(error)) {
+      try {
+        return Response.json(await createSynchronousAnalysis(supabase, { ...parsed.data, userId: auth.user.id, idempotencyKey }, requestId), { headers });
+      } catch (fallbackError) {
+        if (fallbackError instanceof Error && fallbackError.name === "RESUME_NOT_FOUND") return fail("RESUME_NOT_FOUND", "Currículo não encontrado.", requestId, 404);
+        console.error("analysis.synchronous-fallback.failed", { requestId, errorName: fallbackError instanceof Error ? fallbackError.name : "UnknownError" });
+        return fail("INTERNAL_ERROR", "Não foi possível concluir a análise.", requestId, 500);
+      }
+    }
     const message = error.message || "";
     if (message.includes("resume_not_found")) return fail("RESUME_NOT_FOUND", "Currículo não encontrado.", requestId, 404);
     if (message.includes("idempotency_key_reused")) return fail("VALIDATION_ERROR", "A chave de idempotência já foi usada com outros dados.", requestId, 409);
     console.error("analysis.enqueue.failed", { requestId, errorName: error.name, errorMessage: error.message });
     return fail("INTERNAL_ERROR", "Não foi possível iniciar a análise.", requestId, 500);
   }
-
   const queued = Array.isArray(data) ? data[0] : data;
   if (!queued?.analysis_id) return fail("INTERNAL_ERROR", "A fila retornou uma resposta inválida.", requestId, 500);
   let status = queued.analysis_status;

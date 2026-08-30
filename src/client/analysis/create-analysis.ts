@@ -24,7 +24,7 @@ export async function createAnalysis(
   try {
     response = await fetch("/api/analyses", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
       body: JSON.stringify(input),
     });
   } catch {
