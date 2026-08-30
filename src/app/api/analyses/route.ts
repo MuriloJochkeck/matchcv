@@ -11,6 +11,10 @@ function fail(code: string, message: string, requestId: string, status: number, 
   return Response.json({ code, message, requestId, ...(fieldErrors ? { fieldErrors } : {}) }, { status, headers });
 }
 
+function firstRelation<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? value[0] ?? null : value ?? null;
+}
+
 function encodeCursor(createdAt: string) {
   return Buffer.from(JSON.stringify({ createdAt }), "utf8").toString("base64url");
 }
@@ -54,8 +58,8 @@ export async function GET(request: Request) {
   const hasMore = (data ?? []).length > limit;
   const rows = hasMore ? data?.slice(0, limit) ?? [] : data ?? [];
   const analyses = rows.map((analysis) => {
-    const jobVersion = analysis.job_versions?.[0] as unknown as { jobs?: { title: string | null; company_label: string | null }[] } | undefined;
-    const job = jobVersion?.jobs?.[0];
+    const jobVersion = firstRelation(analysis.job_versions as unknown as { jobs?: { title: string | null; company_label: string | null } | { title: string | null; company_label: string | null }[] }[] | { jobs?: { title: string | null; company_label: string | null } | { title: string | null; company_label: string | null }[] } | null | undefined);
+    const job = firstRelation(jobVersion?.jobs)
     return { id: analysis.id, score: analysis.score, status: analysis.status, createdAt: analysis.created_at, jobTitle: job?.title ?? "Vaga analisada", companyLabel: job?.company_label ?? "Empresa não informada" };
   });
 
