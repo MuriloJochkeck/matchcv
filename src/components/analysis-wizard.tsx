@@ -8,15 +8,16 @@ import { ResumeReviewApiError, updateResumeText } from "@/client/resume/update-r
 
 type Resume = { id: string; originalName: string; extractedText: string };
 
-export function AnalysisWizard({ resumes }: { resumes: Resume[] }) {
+export function AnalysisWizard({ resumes, initialResumeId }: { resumes: Resume[]; initialResumeId?: string }) {
   const router = useRouter();
-  const [resumeId, setResumeId] = useState(resumes[0]?.id ?? "");
+  const initialResume = resumes.find((resume) => resume.id === initialResumeId) ?? resumes[0];
+  const [resumeId, setResumeId] = useState(initialResume?.id ?? "");
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [reviewText, setReviewText] = useState(resumes[0]?.extractedText ?? "");
-  const [savedText, setSavedText] = useState(resumes[0]?.extractedText ?? "");
+  const [reviewText, setReviewText] = useState(initialResume?.extractedText ?? "");
+  const [savedText, setSavedText] = useState(initialResume?.extractedText ?? "");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [savingReview, setSavingReview] = useState(false);
