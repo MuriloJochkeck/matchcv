@@ -10,8 +10,17 @@ type RecentAnalysis = {
   score: number | null;
   status: string;
   created_at: string;
-  job_versions?: { jobs?: { title: string | null; company_label: string | null }[] }[];
+  job_versions?: { jobs?: { title: string | null; company_label: string | null } | { title: string | null; company_label: string | null }[] } | { jobs?: { title: string | null; company_label: string | null } | { title: string | null; company_label: string | null }[] }[];
 };
+
+function firstRelation<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? value[0] ?? null : value ?? null;
+}
+
+function jobFromAnalysis(analysis: RecentAnalysis) {
+  const version = firstRelation(analysis.job_versions);
+  return firstRelation(version?.jobs);
+}
 
 function scoreLabel(score: number | null) {
   return score === null ? "Em andamento" : `${Math.round(score)}%`;
@@ -37,7 +46,7 @@ export default async function DashboardPage() {
   ]);
   const recent = (recentData ?? []) as unknown as RecentAnalysis[];
   const featured = recent[0];
-  const featuredJob = featured?.job_versions?.[0]?.jobs?.[0];
+  const featuredJob = featured ? jobFromAnalysis(featured) : null;
 
   return (
     <div className="space-y-8">
@@ -90,7 +99,7 @@ export default async function DashboardPage() {
 
         <section className="card p-6 sm:p-7">
           <div className="flex items-center justify-between gap-4"><div><p className="eyebrow">Atividade</p><h2 className="mt-3 text-xl font-extrabold">Análises recentes</h2></div><ChartIcon className="text-[#145c43]" size={23} /></div>
-          {recent.length ? <div className="mt-6 divide-y divide-[#e8ebe6]">{recent.map((item) => { const job = item.job_versions?.[0]?.jobs?.[0]; return <Link className="group flex items-center justify-between gap-3 py-4 first:pt-0 last:pb-0" href={`/analises/${item.id}`} key={item.id}><div className="min-w-0"><p className="truncate text-sm font-bold">{job?.title || "Vaga analisada"}</p><p className="mt-1 text-xs text-[#69736c]">{statusLabel(item.status)} · {dateLabel(item.created_at)}</p></div><span className="shrink-0 text-lg font-extrabold text-[#145c43]">{scoreLabel(item.score)} <ArrowRightIcon className="inline transition-transform group-hover:translate-x-1" size={15} /></span></Link>; })}</div> : <p className="mt-6 text-sm leading-6 text-[#5b655e]">Suas análises aparecerão aqui assim que você comparar uma vaga.</p>}
+          {recent.length ? <div className="mt-6 divide-y divide-[#e8ebe6]">{recent.map((item) => { const job = jobFromAnalysis(item); return <Link className="group flex items-center justify-between gap-3 py-4 first:pt-0 last:pb-0" href={`/analises/${item.id}`} key={item.id}><div className="min-w-0"><p className="truncate text-sm font-bold">{job?.title || "Vaga analisada"}</p><p className="mt-1 text-xs text-[#69736c]">{statusLabel(item.status)} · {dateLabel(item.created_at)}</p></div><span className="shrink-0 text-lg font-extrabold text-[#145c43]">{scoreLabel(item.score)} <ArrowRightIcon className="inline transition-transform group-hover:translate-x-1" size={15} /></span></Link>; })}</div> : <p className="mt-6 text-sm leading-6 text-[#5b655e]">Suas análises aparecerão aqui assim que você comparar uma vaga.</p>}
           <Link className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#145c43]" href="/analises">Ver todas <ArrowRightIcon size={16} /></Link>
         </section>
       </section>
