@@ -68,3 +68,7 @@ Esse comando executa lint, checagem de tipos, testes e build de produção.
 ## Limites atuais
 
 A análise integrada usa um motor determinístico server-side: o job é enfileirado, processado automaticamente quando o worker está configurado e o relatório persiste dimensões, requisitos, evidências e recomendações. Um worker externo pode chamar a rota POST /api/internal/processing com o segredo configurado para processar jobs pendentes. A pontuação demonstrativa não representa chance de contratação.
+
+## Execução automática
+
+O arquivo ercel.json agenda o processamento de jobs e a expiração lógica de currículos uma vez por dia. Configure CRON_SECRET, SUPABASE_SERVICE_ROLE_KEY e RESUME_RETENTION_DAYS no ambiente de produção. Os cron jobs executam somente em deployments de produção.

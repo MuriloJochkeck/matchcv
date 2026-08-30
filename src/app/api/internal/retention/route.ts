@@ -1,4 +1,4 @@
-﻿import { getProcessingWorkerSecret } from "@/lib/supabase/admin";
+import { getProcessingWorkerSecret } from "@/lib/supabase/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
@@ -14,3 +14,6 @@ export async function POST(request: Request) {
   return Response.json({ expired: ids.length, marked: marked?.length ?? 0 });
 }
 
+export async function GET(request: Request) {
+  return POST(request);
+}
