@@ -18,11 +18,11 @@ Preparar a aplicação para dados reais sem quebrar a demonstração existente. 
 
 ## Não entregue nesta fase
 
-- Upload e registro do PDF pela interface.
-- Extração e revisão de texto.
-- Persistência de vaga e análise.
-- Worker, IA, retry e idempotência operacional.
-- Exclusão completa da conta e retenção automatizada.
+- Upload, validação, extração e revisão do PDF pela interface.
+- Estruturação determinística e revisão dos requisitos da vaga.
+- Persistência versionada de vaga, requisitos revisados e análise.
+- Worker, retry e idempotência operacional.
+- Gateway de IA, retenção automatizada e testes E2E ainda pendentes.
 
 ## Como ativar
 
@@ -43,4 +43,4 @@ Preparar a aplicação para dados reais sem quebrar a demonstração existente. 
 
 ## Próximo marco
 
-Implementar F02/F03: upload assinado, assinatura `%PDF`, hash, extração de texto selecionável, revisão do conteúdo e persistência versionada de currículo e vaga.
+Integrar gateway de IA com schema validado, implementar retenção automatizada, exportação e testes E2E.

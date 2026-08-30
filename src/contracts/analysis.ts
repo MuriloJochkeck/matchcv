@@ -1,5 +1,7 @@
 export const ANALYSIS_SCHEMA_VERSION = "analysis-v1" as const;
 export const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024;
+import type { JobRequirement } from "./job.ts";
+import { normalizeJobRequirements } from "./job.ts";
 
 export type AnalysisStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
 
@@ -50,6 +52,7 @@ export type CreateAnalysisRequest = {
     title?: string;
     company?: string;
     description: string;
+    requirements?: JobRequirement[];
   };
   acceptedTerms: true;
 };
@@ -136,6 +139,7 @@ export function parseCreateAnalysisRequest(input: unknown): ValidationResult {
   const description = typeof job.description === "string" ? job.description.trim() : "";
   const title = optionalTrimmedString(job.title, "job.title", 120, fieldErrors);
   const company = optionalTrimmedString(job.company, "job.company", 120, fieldErrors);
+  const requirements = Array.isArray(job.requirements) ? job.requirements : undefined;
 
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resumeId)) {
     fieldErrors.resumeId = "Selecione um currículo válido.";
@@ -155,7 +159,7 @@ export function parseCreateAnalysisRequest(input: unknown): ValidationResult {
     success: true,
     data: {
       resumeId,
-      job: { title, company, description },
+      job: { title, company, description, requirements: normalizeJobRequirements(requirements, description) },
       acceptedTerms: true,
     },
   };

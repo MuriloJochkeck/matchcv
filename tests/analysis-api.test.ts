@@ -11,5 +11,5 @@ test("a análise determinística usa apenas evidências do currículo", () => {
 test("classifica requisitos desejáveis pelo contexto da vaga", () => {
   const result = computeAnalysis("Experiência com React e TypeScript.", "É obrigatório conhecer React. TypeScript é desejável como diferencial para a vaga em produto digital.");
   assert.equal(result.matches.find((item) => item.title === "React")?.kind, "required");
-  assert.equal(result.matches.find((item) => item.title === "Typescript")?.kind, "desirable");
+  assert.equal(result.matches.find((item) => item.title === "TypeScript")?.kind, "desirable");
 });

@@ -82,6 +82,7 @@ export async function POST(request: Request) {
     p_title: parsed.data.job.title ?? null,
     p_company_label: parsed.data.job.company ?? null,
     p_raw_text: parsed.data.job.description,
+    p_structured_json: { requirements: parsed.data.job.requirements ?? [] },
     p_idempotency_key: idempotencyKey,
     p_request_hash: requestHash,
   });

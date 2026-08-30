@@ -46,7 +46,7 @@ export async function createSynchronousAnalysis(
     throw error;
   }
 
-  const computed = computeAnalysis(resumeVersion.extracted_text, input.job.description);
+  const computed = computeAnalysis(resumeVersion.extracted_text, input.job.description, input.job.requirements);
   const { data: job, error: jobError } = await supabase
     .from("jobs")
     .insert({ user_id: input.userId, title: input.job.title ?? null, company_label: input.job.company ?? null, raw_text: input.job.description })
@@ -57,7 +57,7 @@ export async function createSynchronousAnalysis(
   try {
     const { data: jobVersion, error: jobVersionError } = await supabase
       .from("job_versions")
-      .insert({ job_id: job.id, version: 1, schema_version: "job-v1" })
+      .insert({ job_id: job.id, version: 1, structured_json: { requirements: input.job.requirements ?? [] }, schema_version: "job-v1" })
       .select("id")
       .single();
     if (jobVersionError || !jobVersion) throw jobVersionError ?? new Error("job_version_insert_failed");

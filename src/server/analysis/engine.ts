@@ -15,6 +15,9 @@ export type ComputedMatch = {
   note: string;
 };
 
+import type { JobRequirement } from "../../contracts/job.ts";
+import { extractJobRequirements } from "../../contracts/job.ts";
+
 export type ComputedRecommendation = {
   priority: number;
   category: "resume" | "preparation" | "clarity";
@@ -46,16 +49,19 @@ function evidenceFor(keyword: string, resumeText: string) {
   return sentence ? sentence.slice(0, 500) : null;
 }
 
-export function computeAnalysis(resumeText: string, jobText: string) {
-  const terms = keywords(jobText);
+export function computeAnalysis(resumeText: string, jobText: string, providedRequirements?: JobRequirement[]) {
+  const extractedRequirements = providedRequirements?.length ? providedRequirements : extractJobRequirements(jobText);
+  const terms = extractedRequirements.length ? extractedRequirements.map((item) => item.title) : keywords(jobText);
   const matches: ComputedMatch[] = terms.map((term, index) => {
-    const evidence = evidenceFor(term, resumeText);
+    const requirement = extractedRequirements[index];
+    const searchTerms = requirement?.keywords ?? [normalize(term)];
+    const evidence = searchTerms.map((keyword) => evidenceFor(keyword, resumeText)).find(Boolean) ?? null;
     const partial = !evidence && term.length > 5 && normalize(resumeText).includes(term.slice(0, -2));
     const status = evidence ? "matched" : partial ? "partial" : "missing";
     return {
-      requirementId: `term-${index + 1}`,
-      title: term.replace(/\b\w/g, (letter) => letter.toUpperCase()),
-      kind: kindFor(term, jobText, index),
+      requirementId: requirement?.id ?? `term-${index + 1}`,
+      title: requirement?.title ?? term.replace(/\b\w/g, (letter) => letter.toUpperCase()),
+      kind: requirement?.kind ?? kindFor(term, jobText, index),
       status,
       confidence: evidence ? 90 : partial ? 55 : 80,
       evidence,

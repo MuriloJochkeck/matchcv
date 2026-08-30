@@ -20,6 +20,8 @@
 | `GET /api/analyses/:id` | API/BFF | clientes HTTP | `GetAnalysisResponse` | `ANALYSIS_NOT_FOUND`, 404 | `schemaVersion: analysis-v1` | demo existente e id inexistente |
 | Leitura do relatório | Serviço de análise | Server Component | `Analysis` | resultado nulo vira `notFound()` | contrato interno tipado | build e teste do serviço |
 
+O campo opcional `job.requirements` carrega os requisitos detectados e revisados pelo usuário; cada item contém `title`, `kind`, `keywords` e `sourceText` e é persistido em `job_versions.structured_json`.
+
 O formato de erro segue `{ code, message, fieldErrors?, requestId }`. Conteúdo de currículo e vaga não é escrito em logs; somente o identificador da requisição e o nome sanitizado da classe de erro podem ser registrados.
 
 ## Fluxos adicionados
