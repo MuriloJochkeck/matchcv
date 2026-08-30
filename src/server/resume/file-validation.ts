@@ -14,11 +14,22 @@ export async function sha256Hex(input: ArrayBuffer | Uint8Array) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+export function normalizeExtractedPdfText(value: string) {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .replace(/-\n(?=\p{L})/gu, "")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function extractPdfText(bytes: Uint8Array) {
   const parser = new PDFParse({ data: bytes });
   try {
-    const result = await parser.getText();
-    return result.text.replace(/\s+/g, " ").trim();
+    const result = await parser.getText({ lineEnforce: true, pageJoiner: "\n" });
+    return normalizeExtractedPdfText(result.text);
   } finally {
     await parser.destroy();
   }
