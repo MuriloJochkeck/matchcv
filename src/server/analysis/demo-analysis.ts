@@ -2,6 +2,7 @@ import type { Analysis } from "../../contracts/analysis";
 
 export const demoAnalysis: Analysis = {
   id: "demo",
+  status: "completed",
   jobTitle: "Desenvolvedora Front-end Júnior",
   companyLabel: "Horizonte Tecnologia",
   resumeName: "curriculo-ana-souza.pdf",

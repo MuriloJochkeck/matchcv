@@ -1,6 +1,8 @@
 export const ANALYSIS_SCHEMA_VERSION = "analysis-v1" as const;
 export const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024;
 
+export type AnalysisStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
+
 export type MatchStatus = "matched" | "partial" | "missing";
 
 export type AnalysisDimension = {
@@ -31,6 +33,7 @@ export type Recommendation = {
 
 export type Analysis = {
   id: string;
+  status: AnalysisStatus;
   jobTitle: string;
   companyLabel: string;
   resumeName: string;
@@ -53,12 +56,27 @@ export type CreateAnalysisRequest = {
 
 export type CreateAnalysisResponse = {
   analysisId: string;
-  status: "queued";
-  mode: "demo";
+  status: "queued" | "processing" | "completed";
+  mode?: "demo" | "integrated";
   schemaVersion: typeof ANALYSIS_SCHEMA_VERSION;
   requestId: string;
 };
 
+export type AnalysisListItem = {
+  id: string;
+  score: number | null;
+  status: "queued" | "processing" | "completed" | "failed" | "cancelled";
+  createdAt: string;
+  jobTitle: string;
+  companyLabel: string;
+};
+
+export type ListAnalysesResponse = {
+  analyses: AnalysisListItem[];
+  nextCursor: string | null;
+  schemaVersion: typeof ANALYSIS_SCHEMA_VERSION;
+  requestId: string;
+};
 export type GetAnalysisResponse = {
   analysis: Analysis;
   schemaVersion: typeof ANALYSIS_SCHEMA_VERSION;
@@ -147,8 +165,8 @@ export function isCreateAnalysisResponse(value: unknown): value is CreateAnalysi
   if (!isRecord(value)) return false;
   return (
     typeof value.analysisId === "string" &&
-    value.status === "queued" &&
-    value.mode === "demo" &&
+    (value.status === "queued" || value.status === "processing" || value.status === "completed") &&
+    (value.mode === undefined || value.mode === "demo" || value.mode === "integrated") &&
     value.schemaVersion === ANALYSIS_SCHEMA_VERSION &&
     typeof value.requestId === "string"
   );
@@ -161,4 +179,9 @@ export function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
     typeof value.message === "string" &&
     typeof value.requestId === "string"
   );
+}
+
+export function isListAnalysesResponse(value: unknown): value is ListAnalysesResponse {
+  if (!isRecord(value) || !Array.isArray(value.analyses)) return false;
+  return (value.nextCursor === null || typeof value.nextCursor === "string") && value.schemaVersion === ANALYSIS_SCHEMA_VERSION && typeof value.requestId === "string";
 }

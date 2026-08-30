@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  MAX_RESUME_SIZE_BYTES,
-  parseCreateAnalysisRequest,
-} from "../src/contracts/analysis.ts";
+import { isCreateAnalysisResponse, parseCreateAnalysisRequest } from "../src/contracts/analysis.ts";
 
 const validRequest = {
   resumeId: "11111111-1111-4111-8111-111111111111",
@@ -46,4 +43,19 @@ test("rejeita payload que não seja um objeto", () => {
     success: false,
     fieldErrors: { request: "Envie um objeto JSON válido." },
   });
+});
+
+test("aceita resposta de análise integrada concluída", () => {
+  assert.equal(isCreateAnalysisResponse({
+    analysisId: "22222222-2222-4222-8222-222222222222",
+    status: "completed",
+    mode: "integrated",
+    schemaVersion: "analysis-v1",
+    requestId: "request-1",
+  }), true);
+});
+
+test("aceita lista paginada de análises", async () => {
+  const { isListAnalysesResponse } = await import("../src/contracts/analysis.ts");
+  assert.equal(isListAnalysesResponse({ analyses: [], nextCursor: null, schemaVersion: "analysis-v1", requestId: "req-1" }), true);
 });

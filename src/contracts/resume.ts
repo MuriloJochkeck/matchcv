@@ -7,6 +7,8 @@ export type ResumeSummary = { id: string; originalName: string; sizeBytes: numbe
 export type CreateResumeUploadIntentRequest = { name: string; sizeBytes: number; mimeType: "application/pdf" };
 export type CreateResumeUploadIntentResponse = { resumeId: string; uploadToken: string };
 export type FinalizeResumeUploadResponse = { resume: ResumeSummary };
+export type UpdateResumeTextRequest = { extractedText: string };
+export type UpdateResumeTextResponse = { resumeId: string; version: number; extractedText: string; updatedAt: string };
 
 export type ResumeApiErrorCode = "INVALID_JSON" | "VALIDATION_ERROR" | "UNAUTHENTICATED" | "RESUME_NOT_FOUND" | "UPLOAD_INCOMPLETE" | "INVALID_PDF" | "INTERNAL_ERROR";
 export type ResumeApiErrorResponse = { code: ResumeApiErrorCode; message: string; fieldErrors?: Record<string, string>; requestId: string };
@@ -51,4 +53,8 @@ export function isUploadIntentResponse(value: unknown): value is CreateResumeUpl
 export function isFinalizeResumeResponse(value: unknown): value is FinalizeResumeUploadResponse {
   if (!isRecord(value) || !isRecord(value.resume)) return false;
   return typeof value.resume.id === "string" && typeof value.resume.originalName === "string" && typeof value.resume.sizeBytes === "number" && typeof value.resume.status === "string" && typeof value.resume.createdAt === "string";
+}
+
+export function isUpdateResumeTextResponse(value: unknown): value is UpdateResumeTextResponse {
+  return isRecord(value) && typeof value.resumeId === "string" && Number.isInteger(value.version) && typeof value.extractedText === "string" && typeof value.updatedAt === "string";
 }
