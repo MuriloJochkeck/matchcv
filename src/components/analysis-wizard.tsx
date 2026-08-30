@@ -49,6 +49,14 @@ export function AnalysisWizard({ resumes }: { resumes: Resume[] }) {
   }
 
   async function submit() {
+    if (description.trim().length < 80) {
+      setError("A descrição da vaga deve ter pelo menos 80 caracteres.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError("Confirme a autorização e os limites da análise.");
+      return;
+    }
     setError("");
     setPending(true);
     try {
@@ -56,11 +64,11 @@ export function AnalysisWizard({ resumes }: { resumes: Resume[] }) {
         setPending(false);
         return;
       }
-      const result = await createAnalysis({ resumeId, job: { title, company, description }, acceptedTerms: acceptedTerms as true });
+      const result = await createAnalysis({ resumeId, job: { title, company, description }, acceptedTerms: true });
       router.push(`/analises/${result.analysisId}`);
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof AnalysisApiError ? caught.message : "Não foi possível concluir a análise.");
+      setError(caught instanceof AnalysisApiError ? (caught.fieldErrors ? Object.values(caught.fieldErrors).join(" ") : caught.message) : "Não foi possível concluir a análise.");
       setPending(false);
     }
   }

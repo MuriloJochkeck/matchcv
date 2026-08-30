@@ -11,6 +11,7 @@ export class AnalysisApiError extends Error {
   constructor(
     message: string,
     readonly requestId?: string,
+    readonly fieldErrors?: Record<string, string>,
   ) {
     super(message);
     this.name = "AnalysisApiError";
@@ -34,7 +35,7 @@ export async function createAnalysis(
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     if (isApiErrorResponse(payload)) {
-      throw new AnalysisApiError(payload.message, payload.requestId);
+      throw new AnalysisApiError(payload.message, payload.requestId, payload.fieldErrors);
     }
     throw new AnalysisApiError("O serviço retornou uma resposta inesperada. Tente novamente.");
   }
