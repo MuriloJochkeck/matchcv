@@ -27,7 +27,7 @@ O formato de erro segue `{ code, message, fieldErrors?, requestId }`. Conteúdo 
 - `GET /api/analyses` exige sessão autenticada e retorna histórico paginado com `limit` (1–50) e `cursor` opaco.
 - `DELETE /api/analyses/:id` exige sessão autenticada e exclui somente análise pertencente ao usuário.
 - `PATCH /api/resumes/:id` exige sessão autenticada e cria uma nova versão do texto revisado do currículo.
-- `POST /api/analyses` enfileira a análise com `Idempotency-Key` e retorna `202` enquanto o processamento estiver pendente.
+- `POST /api/analyses` enfileira a análise com `Idempotency-Key`, processa imediatamente quando o worker server-side está configurado e retorna `202` somente enquanto o processamento estiver pendente.
 - `GET /api/internal/processing` e `POST /api/internal/processing` são rotas internas protegidas por `CRON_SECRET` ou `PROCESSING_WORKER_SECRET`; processam jobs e aplicam até três tentativas.
 
 A migration `20260829200000_async_analysis_processing.sql` contém as funções transacionais de enqueue, claim, conclusão e retry. A chave privilegiada do Supabase é usada exclusivamente pelo worker server-side.

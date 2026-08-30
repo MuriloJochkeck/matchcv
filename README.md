@@ -2,7 +2,7 @@
 
 Plataforma web de análise explicável entre currículo e vaga. O produto ajuda candidatos a entender o que o currículo comprova, o que não foi identificado e como melhorar sua apresentação sem inventar experiências.
 
-O projeto possui a Fase 0 navegável e a fundação da Fase 1: autenticação SSR por e-mail, recuperação de senha, sessão protegida, schema PostgreSQL, RLS por proprietário e bucket privado de currículos. Sem variáveis do Supabase, a aplicação continua disponível em modo demonstração; análise, extração do PDF e persistência do relatório ainda usam fixtures.
+O projeto possui a Fase 0 navegável e a fundação da Fase 1: autenticação SSR por e-mail, recuperação de senha, sessão protegida, schema PostgreSQL, RLS por proprietário e bucket privado de currículos. Com o Supabase configurado, o upload extrai o texto do PDF e a análise compara o currículo real com a vaga. Sem as credenciais, a aplicação continua disponível apenas para as telas demonstrativas.
 
 ## Stack
 
@@ -67,4 +67,4 @@ Esse comando executa lint, checagem de tipos, testes e build de produção.
 
 ## Limites atuais
 
-O backend de análise ainda recebe apenas metadados do arquivo e devolve uma fixture. Upload real, extração de texto, jobs, IA estruturada, histórico persistido, feedback e exclusão completa permanecem no backlog da Fase 2 em diante. A pontuação demonstrativa não representa chance de contratação.
+A análise integrada usa um motor determinístico server-side: o job é enfileirado, processado automaticamente quando o worker está configurado e o relatório persiste dimensões, requisitos, evidências e recomendações. Um worker externo pode chamar a rota POST /api/internal/processing com o segredo configurado para processar jobs pendentes. A pontuação demonstrativa não representa chance de contratação.

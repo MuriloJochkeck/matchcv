@@ -1,4 +1,6 @@
 import { parseCreateAnalysisRequest } from "../../../contracts/analysis.ts";
+import { createAdminClient } from "../../../lib/supabase/admin.ts";
+import { processAnalysisJob } from "../../../server/analysis/processor.ts";
 import { createClient } from "../../../lib/supabase/server.ts";
 
 const headers = { "Cache-Control": "private, no-store" };
@@ -93,5 +95,16 @@ export async function POST(request: Request) {
 
   const queued = Array.isArray(data) ? data[0] : data;
   if (!queued?.analysis_id) return fail("INTERNAL_ERROR", "A fila retornou uma resposta inválida.", requestId, 500);
-  return Response.json({ analysisId: queued.analysis_id, status: queued.analysis_status, mode: "integrated", schemaVersion: "analysis-v1", requestId }, { status: queued.analysis_status === "queued" ? 202 : 200, headers });
+  let status = queued.analysis_status;
+  try {
+    const admin = createAdminClient();
+    const { data: processingJob } = await admin.from("processing_jobs").select("id").eq("resource_id", queued.analysis_id).eq("kind", "analysis").maybeSingle();
+    if (processingJob?.id) {
+      const processed = await processAnalysisJob(admin, processingJob.id);
+      if (processed.status === "completed") status = "completed";
+    }
+  } catch (error) {
+    console.warn("analysis.enqueue.processing-deferred", { requestId, errorName: error instanceof Error ? error.name : "UnknownError" });
+  }
+  return Response.json({ analysisId: queued.analysis_id, status, mode: "integrated", schemaVersion: "analysis-v1", requestId }, { status: status === "queued" || status === "processing" ? 202 : 200, headers });
 }
