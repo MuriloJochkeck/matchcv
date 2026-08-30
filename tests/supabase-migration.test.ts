@@ -31,3 +31,18 @@ test("restringe dados e objetos privados ao proprietário autenticado", () => {
   assert.doesNotMatch(sql, /recommendations_insert_own/i);
   assert.doesNotMatch(sql, /service_role/i);
 });
+
+
+const asyncMigrationFile = readdirSync(migrationsDirectory).find((file) => file.includes("async_analysis_processing"));
+assert.ok(asyncMigrationFile, "migration de processamento assíncrono não encontrada");
+const asyncSql = readFileSync(join(migrationsDirectory, asyncMigrationFile), "utf8");
+
+test("protege a fila e implementa claim transacional", () => {
+  assert.match(asyncSql, /create or replace function public\.enqueue_analysis/i);
+  assert.match(asyncSql, /create or replace function public\.claim_analysis_job/i);
+  assert.match(asyncSql, /for update skip locked/i);
+  assert.match(asyncSql, /create or replace function public\.complete_analysis_job/i);
+  assert.match(asyncSql, /create or replace function public\.fail_analysis_job/i);
+  assert.match(asyncSql, /revoke execute on function public\.claim_analysis_job.*authenticated/i);
+  assert.doesNotMatch(asyncSql, /grant update .* to authenticated/i);
+});

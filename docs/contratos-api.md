@@ -31,3 +31,7 @@ O formato de erro segue `{ code, message, fieldErrors?, requestId }`. Conteúdo 
 - `GET /api/internal/processing` e `POST /api/internal/processing` são rotas internas protegidas por `CRON_SECRET` ou `PROCESSING_WORKER_SECRET`; processam jobs e aplicam até três tentativas.
 
 A migration `20260829200000_async_analysis_processing.sql` contém as funções transacionais de enqueue, claim, conclusão e retry. A chave privilegiada do Supabase é usada exclusivamente pelo worker server-side.
+
+## Exclusão completa da conta
+
+A ação de configurações exige a confirmação literal `EXCLUIR`, remove os objetos privados do bucket `resumes`, exclui a conta pelo Admin API e encerra a sessão. `SUPABASE_SERVICE_ROLE_KEY` permanece somente no ambiente server-side.
