@@ -32,7 +32,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: Curren
   return (
     <div className="min-h-screen bg-[#f7f7f2] lg:grid lg:grid-cols-[248px_1fr]">
       <aside className="hidden border-r border-[#dfe3dc] bg-white p-5 lg:flex lg:flex-col">
-        <Logo />
+        <Logo href="/painel" />
         <div className="mt-10"><AppNav /></div>
         <div className="mt-auto rounded-2xl bg-[#f0f1eb] p-4">
           <div className="flex items-center gap-3">
@@ -45,7 +45,7 @@ export function AppShell({ children, user }: { children: ReactNode; user: Curren
       <div className="min-w-0">
         <header className="sticky top-0 z-40 border-b border-[#dfe3dc] bg-[#f7f7f2]/95 backdrop-blur lg:hidden">
           <div className="flex h-16 items-center justify-between px-4">
-            <Logo />
+            <Logo href="/painel" />
             <details className="group relative">
               <summary aria-label="Abrir menu do painel" className="grid size-10 cursor-pointer list-none place-items-center rounded-full border border-[#bbc3bc] bg-white [&::-webkit-details-marker]:hidden"><MenuIcon /></summary>
               <div className="absolute right-0 mt-3 w-64 rounded-2xl border border-[#dfe3dc] bg-white p-3 shadow-xl"><AppNav /><div className="mt-3 border-t border-[#e3e6e1] pt-3"><p className="truncate px-3 text-sm font-bold">{user.displayName}</p><p className="truncate px-3 text-xs text-[#5b655e]">{user.mode === "demo" ? "Conta demonstrativa" : user.email}</p><form action={logoutAction}><button className="mt-2 w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-[#5b655e] hover:bg-[#f0f1eb] hover:text-[#145c43]" type="submit">Sair</button></form></div></div>
