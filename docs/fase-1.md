@@ -18,11 +18,10 @@ Preparar a aplicação para dados reais sem quebrar a demonstração existente. 
 
 ## Não entregue nesta fase
 
-- Upload, validação, extração e revisão do PDF pela interface.
-- Estruturação determinística e revisão dos requisitos da vaga.
-- Persistência versionada de vaga, requisitos revisados e análise.
-- Worker, retry e idempotência operacional.
-- Gateway de IA, retenção automatizada e testes E2E ainda pendentes.
+- Gateway externo de IA, pois o gateway atual é determinístico e local.
+- OCR para PDFs compostos somente por imagens.
+- Testes E2E completos, auditoria WCAG 2.2 AA e observabilidade operacional avançada.
+- Exportação do relatório em PDF, item de roadmap Could.
 
 ## Como ativar
 
