@@ -21,3 +21,13 @@
 | Leitura do relatório | Serviço de análise | Server Component | `Analysis` | resultado nulo vira `notFound()` | contrato interno tipado | build e teste do serviço |
 
 O formato de erro segue `{ code, message, fieldErrors?, requestId }`. Conteúdo de currículo e vaga não é escrito em logs; somente o identificador da requisição e o nome sanitizado da classe de erro podem ser registrados.
+
+## Fluxos adicionados
+
+- `GET /api/analyses` exige sessão autenticada e retorna histórico paginado com `limit` (1–50) e `cursor` opaco.
+- `DELETE /api/analyses/:id` exige sessão autenticada e exclui somente análise pertencente ao usuário.
+- `PATCH /api/resumes/:id` exige sessão autenticada e cria uma nova versão do texto revisado do currículo.
+- `POST /api/analyses` enfileira a análise com `Idempotency-Key` e retorna `202` enquanto o processamento estiver pendente.
+- `GET /api/internal/processing` e `POST /api/internal/processing` são rotas internas protegidas por `CRON_SECRET` ou `PROCESSING_WORKER_SECRET`; processam jobs e aplicam até três tentativas.
+
+A migration `20260829200000_async_analysis_processing.sql` contém as funções transacionais de enqueue, claim, conclusão e retry. A chave privilegiada do Supabase é usada exclusivamente pelo worker server-side.
