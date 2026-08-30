@@ -66,6 +66,10 @@ export function UserIcon(props: IconProps) {
   return <IconBase {...props}><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.7" /><path d="M5 20c.4-4 2.7-6 7-6s6.6 2 7 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" /></IconBase>;
 }
 
+
+export function DownloadIcon(props: IconProps) {
+  return <IconBase {...props}><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" /></IconBase>;
+}
 export function TrashIcon(props: IconProps) {
   return <IconBase {...props}><path d="M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" /></IconBase>;
 }
