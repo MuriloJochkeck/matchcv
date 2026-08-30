@@ -39,3 +39,5 @@ A migration `20260829200000_async_analysis_processing.sql` contém as funções 
 ## Exclusão completa da conta
 
 A ação de configurações exige a confirmação literal `EXCLUIR`, remove os objetos privados do bucket `resumes`, exclui a conta pelo Admin API e encerra a sessão. `SUPABASE_SERVICE_ROLE_KEY` permanece somente no ambiente server-side.
+
+A migration 20260830120000_cancel_analysis_invoker.sql mantém o cancelamento como SECURITY INVOKER, protegido pela policy de atualização do próprio usuário e por grant de colunas limitado.
