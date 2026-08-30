@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { extractPdfText, hasPdfSignature, sha256Hex } from "@/server/resume/file-validation";
 import { getResumeExpiryDate } from "@/server/resume/retention";
 import { extractResumeProfile } from "@/server/analysis/structured";
+import { consumeRateLimit } from "@/server/ops/rate-limit";
 
 const headers = { "Cache-Control": "private, no-store" };
 const fail = (code: string, message: string, requestId: string, status: number, fieldErrors?: Record<string, string>) => Response.json({ code, message, requestId, ...(fieldErrors ? { fieldErrors } : {}) }, { status, headers });
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) return fail("UNAUTHENTICATED", "Entre novamente para enviar um currículo.", requestId, 401);
-  try {
+  const rate = consumeRateLimit(`resume:${auth.user.id}`, 5, 60 * 60 * 1000);
+  if (!rate.allowed) return new Response(JSON.stringify({ code: "RATE_LIMITED", message: "Limite de uploads atingido. Tente novamente mais tarde.", requestId }), { status: 429, headers: { ...headers, "Retry-After": String(rate.retryAfterSeconds), "Content-Type": "application/json" } });  try {
     stage = "read-file";
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (!hasPdfSignature(bytes)) return fail("INVALID_PDF", "O arquivo não possui uma assinatura PDF válida.", requestId, 422);

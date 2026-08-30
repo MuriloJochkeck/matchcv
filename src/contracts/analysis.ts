@@ -92,7 +92,8 @@ export type ApiErrorCode =
   | "ANALYSIS_NOT_FOUND"
   | "INTERNAL_ERROR"
   | "UNAUTHENTICATED"
-  | "RESUME_NOT_FOUND";
+  | "RESUME_NOT_FOUND"
+  | "RATE_LIMITED";
 
 export type ApiErrorResponse = {
   code: ApiErrorCode;

@@ -3,6 +3,7 @@ import { createAdminClient } from "../../../lib/supabase/admin.ts";
 import { processAnalysisJob } from "../../../server/analysis/processor.ts";
 import { createSynchronousAnalysis, shouldUseSynchronousFallback } from "../../../server/analysis/synchronous.ts";
 import { createClient } from "../../../lib/supabase/server.ts";
+import { consumeRateLimit } from "../../../server/ops/rate-limit.ts";
 
 const headers = { "Cache-Control": "private, no-store" };
 
@@ -35,7 +36,6 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) return fail("UNAUTHENTICATED", "Entre novamente para consultar seu histórico.", requestId, 401);
-
   const url = new URL(request.url);
   const requestedLimit = Number(url.searchParams.get("limit") ?? "20");
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 20;
@@ -71,7 +71,10 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) return fail("UNAUTHENTICATED", "Entre novamente para iniciar uma análise.", requestId, 401);
-
+  const rate = consumeRateLimit(`analysis:${auth.user.id}`, 10, 60 * 60 * 1000);
+  if (!rate.allowed) return new Response(JSON.stringify({ code: "RATE_LIMITED", message: "Limite de análises atingido. Tente novamente mais tarde.", requestId }), { status: 429, headers: { ...headers, "Retry-After": String(rate.retryAfterSeconds), "Content-Type": "application/json" } });
+  const { error: consentError } = await supabase.from("profiles").update({ accepted_terms_at: new Date().toISOString() }).eq("id", auth.user.id);
+  if (consentError) return fail("INTERNAL_ERROR", "Não foi possível registrar sua autorização.", requestId, 500);
   const idempotencyKey = request.headers.get("idempotency-key")?.trim() || crypto.randomUUID();
   if (idempotencyKey.length < 16 || idempotencyKey.length > 200) return fail("VALIDATION_ERROR", "A chave de idempotência é inválida.", requestId, 422, { "Idempotency-Key": "Use entre 16 e 200 caracteres." });
 

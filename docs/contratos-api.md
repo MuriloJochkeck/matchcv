@@ -42,3 +42,17 @@ A ação de configurações exige a confirmação literal `EXCLUIR`, remove os o
 
 A migration 20260830120000_cancel_analysis_invoker.sql mantém o cancelamento como SECURITY INVOKER, protegido pela policy de atualização do próprio usuário e por grant de colunas limitado.
 A migration 20260830130000_worker_structured_requirements.sql faz o worker assíncrono consumir os requisitos revisados persistidos em job_versions.structured_json.
+
+## Currículos, vagas e privacidade
+
+- `POST /api/resumes/upload-url` exige sessão e recebe `{ name, sizeBytes, mimeType: "application/pdf" }`. Retorna `resumeId`, `storagePath`, `uploadUrl`, `uploadToken` e `expiresAt`; o limite é de cinco intenções por usuário/hora.
+- Após enviar o PDF ao Storage privado usando a intenção, `POST /api/resumes/:id/finalize` valida a assinatura, extrai texto, gera o perfil estruturado versionado e altera o currículo para `ready`. Falhas deixam o currículo como `failed` e não expõem o conteúdo em logs.
+- `GET /api/resumes/:id` retorna a versão mais recente do currículo pertencente à sessão; `PATCH /api/resumes/:id` cria uma nova versão revisada.
+- `POST /api/jobs` cria uma vaga independente, estrutura requisitos e retorna `jobId`, `versionId` e `requirements`. O texto deve ter entre 80 e 20.000 caracteres.
+- `GET /api/account/export` exporta os dados JSON da conta autenticada, sem `storage_key`; a resposta é privada e marcada como download.
+- `DELETE /api/account` exige `{ confirmation: "EXCLUIR" }`, remove os PDFs privados, exclui a conta pelo Auth Admin API e encerra a sessão.
+- O consentimento obrigatório da análise é gravado em `profiles.accepted_terms_at`; o consentimento opcional de melhoria continua em `profiles.product_improvement_consent_at`.
+- A política operacional atual retém currículos por `RESUME_RETENTION_DAYS` (padrão: 30 dias). O cron protegido por segredo remove os objetos expirados do bucket e marca os registros como `deleted`; a exclusão da conta é imediata.
+- Subprocessadores atualmente registrados: Supabase Auth, Database e Storage, usados para autenticação e persistência; Vercel Functions/Runtime, quando o projeto é executado nessa plataforma. A região efetiva do banco e do Storage é a região configurada no projeto Supabase e deve ser confirmada no painel antes de produção; não é inferida pela aplicação.
+
+Todas as rotas de criação de análise e upload aplicam limite best-effort em memória por usuário. Em múltiplas instâncias, deve ser substituído por um backend distribuído antes de uso em escala.

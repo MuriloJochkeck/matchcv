@@ -7,7 +7,7 @@ export type ResumeSummary = { id: string; originalName: string; sizeBytes: numbe
 export type ResumeDetail = ResumeSummary & { version: number; extractedText: string; updatedAt: string };
 export type GetResumeResponse = { resume: ResumeDetail };
 export type CreateResumeUploadIntentRequest = { name: string; sizeBytes: number; mimeType: "application/pdf" };
-export type CreateResumeUploadIntentResponse = { resumeId: string; uploadToken: string };
+export type CreateResumeUploadIntentResponse = { resumeId: string; storagePath: string; uploadUrl: string; uploadToken: string; expiresAt: string };
 export type FinalizeResumeUploadResponse = { resume: ResumeSummary };
 export type UpdateResumeTextRequest = { extractedText: string };
 export type UpdateResumeTextResponse = { resumeId: string; version: number; extractedText: string; updatedAt: string };
@@ -49,7 +49,7 @@ export function isResumeApiErrorResponse(value: unknown): value is ResumeApiErro
 }
 
 export function isUploadIntentResponse(value: unknown): value is CreateResumeUploadIntentResponse {
-  return isRecord(value) && typeof value.resumeId === "string" && typeof value.uploadToken === "string";
+  return isRecord(value) && typeof value.resumeId === "string" && typeof value.storagePath === "string" && typeof value.uploadUrl === "string" && typeof value.uploadToken === "string" && typeof value.expiresAt === "string";
 }
 
 export function isFinalizeResumeResponse(value: unknown): value is FinalizeResumeUploadResponse {
