@@ -7,7 +7,7 @@ export async function deleteAnalysisAction(formData: FormData) {
   const id = typeof formData.get("analysisId") === "string" ? formData.get("analysisId") : "";
   if (!id) return;
   const supabase = await createClient();
-  const { error } = await supabase.from("analyses").delete().eq("id", id);
+  const { error } = await supabase.rpc("cancel_analysis", { p_analysis_id: id });
   if (error) throw error;
   revalidatePath("/analises");
   revalidatePath("/painel");

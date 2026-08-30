@@ -1,12 +1,22 @@
-import { MAX_EXTRACTED_TEXT_LENGTH } from "@/contracts/resume";
+import { MAX_EXTRACTED_TEXT_LENGTH, type ResumeDetail } from "@/contracts/resume";
 import { createClient } from "@/lib/supabase/server";
 
 const headers = { "Cache-Control": "private, no-store" };
+function fail(code: string, message: string, requestId: string, status: number, fieldErrors?: Record<string, string>) { return Response.json({ code, message, requestId, ...(fieldErrors ? { fieldErrors } : {}) }, { status, headers }); }
 
-function fail(code: string, message: string, requestId: string, status: number, fieldErrors?: Record<string, string>) {
-  return Response.json({ code, message, requestId, ...(fieldErrors ? { fieldErrors } : {}) }, { status, headers });
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const requestId = crypto.randomUUID(); const { id } = await context.params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return fail("RESUME_NOT_FOUND", "Currículo não encontrado.", requestId, 404);
+  const supabase = await createClient(); const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError || !auth.user) return fail("UNAUTHENTICATED", "Entre novamente para acessar o currículo.", requestId, 401);
+  const { data, error } = await supabase.from("resumes").select("id, original_name, size_bytes, status, created_at, expires_at, resume_versions(version, extracted_text, created_at)").eq("id", id).is("deleted_at", null).single();
+  if (error || !data) return fail("RESUME_NOT_FOUND", "Currículo não encontrado.", requestId, 404);
+  const versions = Array.isArray(data.resume_versions) ? data.resume_versions : [];
+  const version = versions.sort((a, b) => Number(b.version) - Number(a.version))[0];
+  if (!version) return fail("RESUME_NOT_FOUND", "Versão do currículo não encontrada.", requestId, 404);
+  const resume: ResumeDetail = { id: data.id, originalName: data.original_name, sizeBytes: data.size_bytes, status: data.status, createdAt: data.created_at, expiresAt: data.expires_at, version: Number(version.version), extractedText: String(version.extracted_text).slice(0, MAX_EXTRACTED_TEXT_LENGTH), updatedAt: version.created_at };
+  return Response.json({ resume }, { headers });
 }
-
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const requestId = crypto.randomUUID();
   const { id } = await context.params;

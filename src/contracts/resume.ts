@@ -3,7 +3,9 @@ export const RESUME_BUCKET = "resumes" as const;
 export const MAX_EXTRACTED_TEXT_LENGTH = 100_000;
 
 export type ResumeStatus = "uploaded" | "extracting" | "ready" | "failed";
-export type ResumeSummary = { id: string; originalName: string; sizeBytes: number; status: ResumeStatus; createdAt: string };
+export type ResumeSummary = { id: string; originalName: string; sizeBytes: number; status: ResumeStatus; createdAt: string; expiresAt: string | null };
+export type ResumeDetail = ResumeSummary & { version: number; extractedText: string; updatedAt: string };
+export type GetResumeResponse = { resume: ResumeDetail };
 export type CreateResumeUploadIntentRequest = { name: string; sizeBytes: number; mimeType: "application/pdf" };
 export type CreateResumeUploadIntentResponse = { resumeId: string; uploadToken: string };
 export type FinalizeResumeUploadResponse = { resume: ResumeSummary };
@@ -53,6 +55,12 @@ export function isUploadIntentResponse(value: unknown): value is CreateResumeUpl
 export function isFinalizeResumeResponse(value: unknown): value is FinalizeResumeUploadResponse {
   if (!isRecord(value) || !isRecord(value.resume)) return false;
   return typeof value.resume.id === "string" && typeof value.resume.originalName === "string" && typeof value.resume.sizeBytes === "number" && typeof value.resume.status === "string" && typeof value.resume.createdAt === "string";
+}
+
+export function isGetResumeResponse(value: unknown): value is GetResumeResponse {
+  if (!isRecord(value) || !isRecord(value.resume)) return false;
+  const resume = value.resume;
+  return typeof resume.id === "string" && typeof resume.originalName === "string" && typeof resume.sizeBytes === "number" && typeof resume.status === "string" && typeof resume.createdAt === "string" && (resume.expiresAt === null || typeof resume.expiresAt === "string") && Number.isInteger(resume.version) && typeof resume.extractedText === "string" && typeof resume.updatedAt === "string";
 }
 
 export function isUpdateResumeTextResponse(value: unknown): value is UpdateResumeTextResponse {
