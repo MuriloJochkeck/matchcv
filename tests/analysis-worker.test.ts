@@ -10,6 +10,7 @@ test("worker usa os requisitos revisados persistidos na vaga", async () => {
       if (name === "complete_analysis_job") { completedPayload = payload; return { data: null, error: null }; }
       throw new Error(`RPC inesperado: ${name}`);
     },
+    from: () => ({ update: () => ({ eq: async () => ({ error: null }) }) }),
   } as never;
 
   const result = await processAnalysisJob(supabase);

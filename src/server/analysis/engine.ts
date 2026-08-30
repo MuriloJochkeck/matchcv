@@ -1,90 +1,52 @@
-export type ComputedDimension = {
-  dimension: "technical" | "experience" | "required" | "education" | "evidence";
-  weight: number;
-  score: number;
-  rationale: string;
-};
-
-export type ComputedMatch = {
-  requirementId: string;
-  title: string;
-  kind: "required" | "desirable";
-  status: "matched" | "partial" | "missing";
-  confidence: number;
-  evidence: string | null;
-  note: string;
-};
-
 import type { JobRequirement } from "../../contracts/job.ts";
-import { extractJobRequirements } from "../../contracts/job.ts";
+import { extractJobRequirements, normalize } from "../../contracts/job.ts";
 
-export type ComputedRecommendation = {
-  priority: number;
-  category: "resume" | "preparation" | "clarity";
-  title: string;
-  description: string;
-};
+export type ComputedDimension = { dimension: "technical" | "experience" | "required" | "education" | "evidence"; weight: number; score: number; rationale: string };
+export type ComputedMatch = { requirementId: string; title: string; kind: "required" | "desirable"; status: "matched" | "partial" | "missing" | "not_applicable"; confidence: number; evidence: string | null; note: string };
+export type ComputedRecommendation = { priority: number; category: "resume" | "preparation" | "clarity"; title: string; description: string };
 
-const STOP_WORDS = new Set([
-  "para", "com", "uma", "um", "das", "dos", "que", "por", "como", "mais", "menos", "entre", "sobre", "ser", "ter", "sua", "seu", "nos", "nas", "the", "and", "with", "from", "this", "that", "will", "vaga", "pessoa", "profissional", "experiencia", "experiência", "conhecimento", "conhecimentos", "desejavel", "desejável", "obrigatorio", "obrigatório",
-]);
-
-function normalize(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function sentenceList(value: string) { return value.split(/(?<=[.!?])\s+|\n+/).map((item) => item.trim()).filter(Boolean); }
+function experienceYears(value: string) { const match = value.match(/(\d+)\s*\+?\s*anos?/i); return match ? Number(match[1]) : null; }
+function evidenceFor(terms: string[], resumeText: string) {
+  const normalizedResume = normalize(resumeText);
+  const sentences = sentenceList(resumeText);
+  for (const term of terms) { const sentence = sentences.find((item) => normalize(item).includes(normalize(term))); if (sentence) return { text: sentence.slice(0, 500), direct: normalizedResume.includes(normalize(term)) }; }
+  return null;
 }
-
-function keywords(jobText: string) {
-  const words = normalize(jobText).match(/[a-z0-9+#.]{3,}/g) ?? [];
-  return [...new Set(words.map((word) => word.replace(/^\.+|\.+$/g, "")).filter((word) => !STOP_WORDS.has(word) && !/^\d+$/.test(word)))].slice(0, 10);
+function scoreForMatch(requirement: JobRequirement, resumeText: string) {
+  if (/nao se aplica|não se aplica|not applicable/.test(normalize(requirement.sourceText))) return { status: "not_applicable" as const, confidence: 100, evidence: null, note: "O próprio texto da vaga indica que este requisito não se aplica." };
+  const direct = evidenceFor(requirement.keywords, resumeText);
+  if (direct) { const quality = /\d+|resultado|entreg|projeto|atuou|lider/i.test(direct.text) ? 96 : 88; return { status: "matched" as const, confidence: quality, evidence: direct.text, note: "Evidência direta encontrada no texto do currículo." }; }
+  const related = evidenceFor(requirement.synonyms, resumeText);
+  if (related) return { status: "partial" as const, confidence: 72, evidence: related.text, note: "Foi encontrada uma competência relacionada, mas não a mesma expressão da vaga." };
+  if (requirement.category === "experience") {
+    const requested = experienceYears(requirement.sourceText); const available = experienceYears(resumeText);
+    if (requested !== null && available !== null && available >= requested) return { status: "matched" as const, confidence: 82, evidence: `${available} anos de experiência informados no currículo.`, note: "O tempo de experiência informado atende ao mínimo identificado." };
+    if (requested !== null && available !== null && available > 0) return { status: "partial" as const, confidence: 60, evidence: `${available} anos de experiência informados no currículo.`, note: "O tempo informado é inferior ao mínimo identificado na vaga." };
+  }
+  const title = normalize(requirement.title); if (title.length > 5 && normalize(resumeText).includes(title.slice(0, -2))) return { status: "partial" as const, confidence: 50, evidence: null, note: "Há um termo parcialmente relacionado, mas sem evidência suficiente." };
+  return { status: "missing" as const, confidence: 84, evidence: null, note: "Nenhuma evidência confiável foi identificada no texto do currículo." };
 }
-
-function kindFor(keyword: string, jobText: string, index: number): "required" | "desirable" {
-  const sentence = normalize(jobText).split(/[.!?\n]+/).find((item) => item.includes(keyword)) ?? "";
-  if (/desejavel|diferencial|plus|nice to have/.test(sentence)) return "desirable";
-  if (/obrigatorio|requisito|necessario|must have|essencial/.test(sentence)) return "required";
-  return index < 6 ? "required" : "desirable";
-}
-function evidenceFor(keyword: string, resumeText: string) {
-  const sentence = resumeText.split(/(?<=[.!?])\s+/).find((item) => normalize(item).includes(keyword));
-  return sentence ? sentence.slice(0, 500) : null;
-}
-
 export function computeAnalysis(resumeText: string, jobText: string, providedRequirements?: JobRequirement[]) {
-  const extractedRequirements = providedRequirements?.length ? providedRequirements : extractJobRequirements(jobText);
-  const terms = extractedRequirements.length ? extractedRequirements.map((item) => item.title) : keywords(jobText);
-  const matches: ComputedMatch[] = terms.map((term, index) => {
-    const requirement = extractedRequirements[index];
-    const searchTerms = requirement?.keywords ?? [normalize(term)];
-    const evidence = searchTerms.map((keyword) => evidenceFor(keyword, resumeText)).find(Boolean) ?? null;
-    const partial = !evidence && term.length > 5 && normalize(resumeText).includes(term.slice(0, -2));
-    const status = evidence ? "matched" : partial ? "partial" : "missing";
-    return {
-      requirementId: requirement?.id ?? `term-${index + 1}`,
-      title: requirement?.title ?? term.replace(/\b\w/g, (letter) => letter.toUpperCase()),
-      kind: requirement?.kind ?? kindFor(term, jobText, index),
-      status,
-      confidence: evidence ? 90 : partial ? 55 : 80,
-      evidence,
-      note: evidence ? "Termo da vaga encontrado no texto extraído do currículo." : partial ? "Há um termo relacionado, mas sem correspondência direta." : "Nenhuma evidência direta foi identificada no texto extraído.",
-    };
-  });
-  const matched = matches.filter((item) => item.status === "matched").length;
-  const partial = matches.filter((item) => item.status === "partial").length;
-  const coverage = terms.length ? Math.round(((matched + partial * 0.5) / terms.length) * 100) : 0;
+  const requirements = providedRequirements?.length ? providedRequirements : extractJobRequirements(jobText);
+  const matches = requirements.map((requirement) => { const result = scoreForMatch(requirement, resumeText); return { requirementId: requirement.id, title: requirement.title, kind: requirement.kind, ...result }; });
+  const applicable = matches.filter((item) => item.status !== "not_applicable");
+  const weightedTotal = requirements.reduce((sum, requirement, index) => { const match = matches[index]; const value = match.status === "matched" ? 100 : match.status === "partial" ? 55 : match.status === "not_applicable" ? 0 : 0; return sum + value * requirement.weight; }, 0);
+  const weightDenominator = requirements.reduce((sum, requirement, index) => sum + (matches[index].status === "not_applicable" ? 0 : requirement.weight), 0);
+  const score = weightDenominator ? Math.round(weightedTotal / weightDenominator) : 0;
+  const technical = matches.filter((_, index) => requirements[index].category === "technical");
+  const experience = matches.filter((_, index) => requirements[index].category === "experience");
+  const education = matches.filter((_, index) => requirements[index].category === "education" || requirements[index].category === "language");
+  const coverage = (items: ComputedMatch[]) => items.length ? Math.round(items.reduce((sum, item) => sum + (item.status === "matched" ? 100 : item.status === "partial" ? 55 : item.status === "not_applicable" ? 0 : 0), 0) / Math.max(1, items.filter((item) => item.status !== "not_applicable").length)) : 0;
   const dimensions: ComputedDimension[] = [
-    { dimension: "technical", weight: 40, score: coverage, rationale: "Pontuação baseada na correspondência entre termos da vaga e o currículo." },
-    { dimension: "experience", weight: 25, score: coverage, rationale: "Evidências encontradas no texto do currículo para os termos analisados." },
-    { dimension: "required", weight: 20, score: coverage, rationale: `${matched} correspondência(s) direta(s) e ${partial} parcial(is) dentre ${terms.length} termo(s) analisado(s).` },
-    { dimension: "education", weight: 10, score: Math.min(100, coverage), rationale: "Esta versão não infere qualificações que não estejam escritas no currículo." },
-    { dimension: "evidence", weight: 5, score: Math.min(100, matched * 15), rationale: "Reflete a quantidade de trechos diretos encontrados no documento." },
+    { dimension: "technical", weight: 40, score: coverage(technical), rationale: "Competências técnicas ponderadas por obrigatoriedade, equivalência e qualidade da evidência." },
+    { dimension: "experience", weight: 25, score: coverage(experience), rationale: "Experiência considera contexto profissional e tempo informado quando disponível." },
+    { dimension: "required", weight: 20, score: score, rationale: `${applicable.filter((item) => item.kind === "required" && item.status === "matched").length} requisito(s) obrigatório(s) atendido(s) entre ${applicable.filter((item) => item.kind === "required").length}.` },
+    { dimension: "education", weight: 10, score: coverage(education), rationale: "Formação e idiomas só são considerados quando aparecem explicitamente no currículo." },
+    { dimension: "evidence", weight: 5, score: applicable.length ? Math.round(applicable.reduce((sum, item) => sum + item.confidence, 0) / applicable.length) : 0, rationale: "Confiança agregada pela qualidade e especificidade das evidências encontradas." },
   ];
   const missing = matches.filter((item) => item.status === "missing").slice(0, 3);
-  const recommendations: ComputedRecommendation[] = missing.map((item, index) => ({
-    priority: index === 0 ? 1 : 2,
-    category: "resume",
-    title: `Esclareça sua experiência com ${item.title}`,
-    description: `Se você possui experiência real com ${item.title}, descreva-a no currículo com contexto e resultado. Não adicione competências que não possa sustentar.`,
-  }));
+  const recommendations: ComputedRecommendation[] = missing.map((item, index) => ({ priority: index === 0 ? 1 : 2, category: "resume" as const, title: `Esclareça sua experiência com ${item.title}`, description: `Se você possui experiência real com ${item.title}, descreva contexto e resultado no currículo. Não adicione competências que não possa sustentar.` }));
   if (!recommendations.length) recommendations.push({ priority: 2, category: "preparation", title: "Prepare evidências para a entrevista", description: "Escolha exemplos reais do currículo para explicar as experiências relacionadas à vaga." });
-  return { dimensions, matches, recommendations, score: Math.round(dimensions.reduce((total, item) => total + item.score * item.weight, 0) / 100) };
+  return { dimensions, matches, recommendations, score };
 }

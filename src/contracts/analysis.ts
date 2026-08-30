@@ -5,7 +5,7 @@ import { normalizeJobRequirements } from "./job.ts";
 
 export type AnalysisStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
 
-export type MatchStatus = "matched" | "partial" | "missing";
+export type MatchStatus = "matched" | "partial" | "missing" | "not_applicable";
 
 export type AnalysisDimension = {
   key: "technical" | "experience" | "required" | "education" | "evidence";

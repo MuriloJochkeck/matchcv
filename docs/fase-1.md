@@ -44,3 +44,7 @@ Preparar a aplicação para dados reais sem quebrar a demonstração existente. 
 ## Próximo marco
 
 Integrar gateway de IA com schema validado, implementar retenção automatizada, exportação e testes E2E.
+
+## Implementação atualizada
+
+O fluxo integrado agora estrutura currículo e vaga em JSON validado (structured-v1), aplica proteção contra padrões de prompt injection, permite revisão dos requisitos detectados e calcula correspondência contextual com pesos, sinônimos, tempo de experiência, confiança de evidência e status não aplicável. O gateway local usa regras determinísticas versionadas (ules-v2); um provedor externo de IA permanece opcional e não é necessário para executar a análise.

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeAnalysis } from "./engine.ts";
-import { normalizeJobRequirements } from "../../contracts/job.ts";
+import { extractJobProfile, extractResumeProfile, MODEL_VERSION, PROMPT_VERSION } from "./structured.ts";
 
 type ClaimedJob = { job_id: string; analysis_id: string; attempts: number; resume_text: string | null; job_text: string | null; structured_json: unknown };
 export type ProcessingResult =
@@ -16,8 +16,11 @@ export async function processAnalysisJob(supabase: SupabaseClient, requestedJobI
   try {
     if (!job.resume_text?.trim() || !job.job_text?.trim()) throw new Error("PROCESSING_INPUT_UNAVAILABLE");
     const structured = typeof job.structured_json === "object" && job.structured_json !== null ? job.structured_json as { requirements?: unknown } : null;
-    const requirements = normalizeJobRequirements(structured?.requirements, job.job_text);
-    const computed = computeAnalysis(job.resume_text, job.job_text, requirements);
+    const resumeProfile = extractResumeProfile(job.resume_text);
+    const jobProfile = extractJobProfile(job.job_text, structured?.requirements);
+    if (resumeProfile.schemaVersion !== jobProfile.schemaVersion) throw new Error("STRUCTURED_SCHEMA_MISMATCH");
+    const computed = computeAnalysis(job.resume_text, job.job_text, jobProfile.requirements);
+    await supabase.from("analyses").update({ prompt_version: PROMPT_VERSION, model_version: MODEL_VERSION }).eq("id", job.analysis_id);
     const { error } = await supabase.rpc("complete_analysis_job", {
       p_job_id: job.job_id, p_analysis_id: job.analysis_id, p_score: computed.score,
       p_dimensions: computed.dimensions,

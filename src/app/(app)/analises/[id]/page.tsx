@@ -8,7 +8,7 @@ import { getAnalysisById } from "@/server/analysis/service";
 const statusLabels = {
   matched: "Atendido",
   partial: "Parcial",
-  missing: "Não identificado",
+  missing: "Não identificado", not_applicable: "Não se aplica",
 } as const;
 
 export default async function AnalysisReportPage({ params }: { params: Promise<{ id: string }> }) {

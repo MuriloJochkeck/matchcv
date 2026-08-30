@@ -2,6 +2,7 @@ import { MAX_EXTRACTED_TEXT_LENGTH, RESUME_BUCKET, parseResumeUploadIntent } fro
 import { createClient } from "@/lib/supabase/server";
 import { extractPdfText, hasPdfSignature, sha256Hex } from "@/server/resume/file-validation";
 import { getResumeExpiryDate } from "@/server/resume/retention";
+import { extractResumeProfile } from "@/server/analysis/structured";
 
 const headers = { "Cache-Control": "private, no-store" };
 const fail = (code: string, message: string, requestId: string, status: number, fieldErrors?: Record<string, string>) => Response.json({ code, message, requestId, ...(fieldErrors ? { fieldErrors } : {}) }, { status, headers });
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     const { data: resume, error: resumeError } = await supabase.from("resumes").insert({ id: resumeId, user_id: auth.user.id, original_name: parsed.data.name, storage_key: storageKey, size_bytes: parsed.data.sizeBytes, sha256: await sha256Hex(bytes), status: "ready", expires_at: getResumeExpiryDate().toISOString() }).select("id, original_name, size_bytes, status, created_at, expires_at").single();
     if (resumeError || !resume) { await supabase.storage.from(RESUME_BUCKET).remove([storageKey]); throw resumeError || new Error("Resume unavailable"); }
     stage = "version-insert";
-    const { error: versionError } = await supabase.from("resume_versions").insert({ resume_id: resume.id, version: 1, extracted_text: extractedText, schema_version: "resume-v1" });
+    const { error: versionError } = await supabase.from("resume_versions").insert({ resume_id: resume.id, version: 1, extracted_text: extractedText, structured_json: extractResumeProfile(extractedText), schema_version: "resume-v1" });
     if (versionError) { await supabase.from("resumes").delete().eq("id", resume.id); await supabase.storage.from(RESUME_BUCKET).remove([storageKey]); throw versionError; }
     return Response.json({ resume: { id: resume.id, originalName: resume.original_name, sizeBytes: resume.size_bytes, status: resume.status, createdAt: resume.created_at, expiresAt: resume.expires_at } }, { status: 201, headers });
   } catch (error) {

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CreateAnalysisRequest, CreateAnalysisResponse } from "../../contracts/analysis.ts";
 import { ANALYSIS_SCHEMA_VERSION } from "../../contracts/analysis.ts";
 import { computeAnalysis } from "./engine.ts";
+import { MODEL_VERSION, PROMPT_VERSION } from "./structured.ts";
 
 type SynchronousInput = CreateAnalysisRequest & { userId: string; idempotencyKey: string };
 
@@ -64,7 +65,7 @@ export async function createSynchronousAnalysis(
 
     const { data: analysis, error: analysisError } = await supabase
       .from("analyses")
-      .insert({ user_id: input.userId, resume_version_id: resumeVersion.id, job_version_id: jobVersion.id, status: "completed", score: computed.score, algorithm_version: "deterministic-v1", schema_version: ANALYSIS_SCHEMA_VERSION, completed_at: new Date().toISOString() })
+      .insert({ user_id: input.userId, resume_version_id: resumeVersion.id, job_version_id: jobVersion.id, status: "completed", score: computed.score, algorithm_version: "deterministic-v2", prompt_version: PROMPT_VERSION, model_version: MODEL_VERSION, schema_version: ANALYSIS_SCHEMA_VERSION, completed_at: new Date().toISOString() })
       .select("id")
       .single();
     if (analysisError || !analysis) throw analysisError ?? new Error("analysis_insert_failed");
